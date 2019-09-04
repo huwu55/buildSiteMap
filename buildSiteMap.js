@@ -26,6 +26,17 @@ function returnLinksAndImage(siteMap, domain, url, callback){
     fetch(url)
         .then(res => {page_url = res.url; return res.text();})
         .then(res => {
+            if(isFetched(page_url, siteMap)){
+                callback([], siteMap);
+                return;
+            }
+
+            console.log('Fetching: '+ url );
+            let log = 'Fetching: '+ url + '\n';
+            fs.appendFile('./fetchlog.txt', log, (err)=>{
+                if(err) throw err;
+            });
+
             urlWithSameDomain.push(page_url);
             let $ = cheerio.load(res);
             let links = [];
@@ -100,7 +111,11 @@ function build_this_level(siteMap, domain, depth, urls, urlsNextLevel, callback)
         if(urls.length !== 0){
             // same level fetching/crawling
             if(!isFetched(urls[urls.length-1], siteMap)){
-                console.log('Depth: '+depth+'. Fetching: '+ urls[urls.length-1]);
+                // console.log('Depth: '+depth+'. Fetching: '+ urls[urls.length-1]);
+                // let log = 'Depth: '+depth+'. Fetching: '+ urls[urls.length-1] + '\n';
+                // fs.appendFile('./fetchlog.txt', log, (err)=>{
+                //     if(err) throw err;
+                // });
                 returnLinksAndImage(siteMap, domain, urls[urls.length - 1], (urlWithSameDomain, sm)=>{
                     urlsNextLevel = [...urlsNextLevel, ...urlWithSameDomain];
                     urls.pop();
