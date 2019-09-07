@@ -20,15 +20,14 @@ function jointURL(domain, url){
     return finalURL;
 }
 
-function returnLinksAndImage(siteMap, domain, url, callback){
+async function returnLinksAndImage(siteMap, domain, url){
     let urlWithSameDomain = [];
     let page_url = '';
-    fetch(url)
+    return await fetch(url)
         .then(res => {page_url = res.url; return res.text();})
         .then(res => {
             if(isFetched(page_url, siteMap)){
-                callback([], siteMap);
-                return;
+                return {urlWithSameDomain: [], siteMap};
             }
 
             console.log('Fetching: '+ url );
@@ -91,14 +90,14 @@ function returnLinksAndImage(siteMap, domain, url, callback){
                 images: imgLinks
             };
             siteMap.push(info);
-            callback(urlWithSameDomain, siteMap);
+            return {urlWithSameDomain, siteMap};
         })
         .catch(error=>{
             console.log(error.message);
             fs.appendFile('./errers.txt', error.message+"\n", (err)=>{
                 if(err) throw err;
             });
-            callback([], siteMap);
+            return {urlWithSameDomain: [], sitMap};
         });
 }
 
@@ -124,11 +123,14 @@ function build_this_level(siteMap, domain, depth, urls, urlsNextLevel, callback)
                 // fs.appendFile('./fetchlog.txt', log, (err)=>{
                 //     if(err) throw err;
                 // });
-                returnLinksAndImage(siteMap, domain, urls[urls.length - 1], (urlWithSameDomain, sm)=>{
-                    urlsNextLevel = [...urlsNextLevel, ...urlWithSameDomain];
-                    urls.pop();
-                    build_this_level(sm, domain, depth, urls, urlsNextLevel, callback);
-                });
+                returnLinksAndImage(siteMap, domain, urls[urls.length - 1]) 
+                    .then(result =>{
+                        let {urlWithSameDomain} = result;
+                        let sm = result.siteMap;
+                        urlsNextLevel = [...urlsNextLevel, ...urlWithSameDomain];
+                        urls.pop();
+                        build_this_level(sm, domain, depth, urls, urlsNextLevel, callback);
+                    });
             }
             else{
                 urls.pop();
@@ -165,8 +167,11 @@ function build_site_map(url, max_depth){
             .then(res_url=>{
                 domain = getDomain(res_url);
                 console.log('Domain: '+domain);
-
-                build_this_level([], domain, max_depth, [url], [], (siteMap)=>{
+                return domain;
+            })
+            .then(domain => {
+                build_this_level([], domain, max_depth, [url], [], (siteMap) => {
+                    // console.log(siteMap);
                     fs.writeFile('./sitemap.json', JSON.stringify(siteMap), (err)=>{
                         if(err) throw err;
 
