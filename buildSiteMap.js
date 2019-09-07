@@ -51,6 +51,11 @@ function returnLinksAndImage(siteMap, domain, url, callback){
                 if(href.startsWith('mailto:'))
                     return;
 
+                // Protocal relative URL
+                if(href.startsWith('//'))
+                    href = 'https:' + href;
+
+                // Path relative URL
                 if(!href.startsWith('http'))
                     href = jointURL(domain, href);
 
@@ -67,6 +72,9 @@ function returnLinksAndImage(siteMap, domain, url, callback){
                 let src = $(el).attr('src');
                 if(src==undefined)  
                     return;
+
+                if(src.startsWith('//'))
+                    src = 'https:' + src;
 
                 if(!src.startsWith('http'))
                     src = jointURL(domain, src);
@@ -164,7 +172,7 @@ function build_site_map(url, max_depth){
 
                         console.log('Site map is built. Json file locates at ./sitemap.json');
                     });
-                })
+                });
             })
             .catch(err=>{
                 fs.appendFile('./errers.txt', err.message+'\n', (error)=>{
